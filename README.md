@@ -9,7 +9,7 @@ It saves one weekly candlestick chart per year, styled like TradingView.**
 ![pandas](https://img.shields.io/badge/pandas-2.2-150458?logo=pandas&logoColor=white)
 ![yfinance](https://img.shields.io/badge/data-Yahoo_Finance-6001D2)
 ![mplfinance](https://img.shields.io/badge/charts-mplfinance-11557C)
-![Tests](https://img.shields.io/badge/tests-38_passing-blue?logo=pytest&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-34_passing-blue?logo=pytest&logoColor=white)
 
 <br/>
 
@@ -68,7 +68,7 @@ screenshots/
 | **Year boundaries** | A week belongs to the year its Monday is in. |
 | **Adjustments** | Split-adjusted, not dividend-adjusted (TradingView's default). |
 
-> Prices usually match TradingView to the cent. Volume can differ a little, because data vendors count trades from different venues.
+> Prices usually match TradingView to the cent.
 
 ## 🧪 Tests
 
