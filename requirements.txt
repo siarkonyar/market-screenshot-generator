@@ -1,0 +1,7 @@
+yfinance>=0.2.54
+pandas>=2.2
+mplfinance>=0.12.10b0
+matplotlib>=3.8
+six>=1.16  # imported by mplfinance but not declared as its dependency
+pytest>=8.0
+pytest-cov>=5.0
