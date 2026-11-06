@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -104,18 +105,34 @@ def test_run_reports_fetch_errors_and_returns_failure(tmp_path):
     assert "No data found for NOPE." in messages[-1]
 
 
-def test_main_prompts_for_symbol_then_year_and_runs(monkeypatch, tmp_path):
+def test_build_run_dir_names_folder_after_symbol_start_year_and_request_time(tmp_path):
+    # Arrange
+    requested_at = datetime(2026, 11, 6, 16, 53, 7)
+
+    # Act
+    run_dir = cli.build_run_dir(tmp_path, "AAPL", 2019, requested_at)
+
+    # Assert
+    assert run_dir == tmp_path / "AAPL_from_2019_2026-11-06_16-53-07"
+
+
+def test_main_saves_charts_into_a_folder_for_this_request(monkeypatch, tmp_path):
     # Arrange
     answers = iter(["aapl", "2020"])
     calls = []
     monkeypatch.setattr(cli, "run", lambda *args: calls.append(args) or 0)
+    requested_at = datetime(2026, 11, 6, 9, 5, 0)
 
     # Act
-    exit_code = cli.main(tmp_path, read=lambda prompt: next(answers))
+    exit_code = cli.main(
+        tmp_path,
+        read=lambda prompt: next(answers),
+        now=lambda: requested_at,
+    )
 
     # Assert
     assert exit_code == 0
-    assert calls == [("AAPL", 2020, tmp_path)]
+    assert calls == [("AAPL", 2020, tmp_path / "AAPL_from_2020_2026-11-06_09-05-00")]
 
 
 def test_main_exits_cleanly_on_ctrl_c(tmp_path):

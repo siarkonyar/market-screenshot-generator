@@ -8,10 +8,10 @@ $ python main.py
 Enter ticker symbol (e.g. AAPL): AAPL
 Enter start year (e.g. 2018): 2018
 Fetching AAPL daily data since 2018...
-Saved .../screenshots/AAPL_2018.png
+Saved .../screenshots/AAPL_from_2018_2026-11-06_16-57-40/AAPL_2018.png
 ...
-Saved .../screenshots/AAPL_2026.png
-Done. 9 charts saved to .../screenshots
+Saved .../screenshots/AAPL_from_2018_2026-11-06_16-57-40/AAPL_2026.png
+Done. 9 charts saved to .../screenshots/AAPL_from_2018_2026-11-06_16-57-40
 ```
 
 ## Setup
@@ -36,9 +36,20 @@ The script asks for:
    `BRK-B`, `BTC-USD`, `^GSPC` or `THYAO.IS`.
 2. **Start year**, for example `2018`.
 
-It then writes `screenshots/<SYMBOL>_<YEAR>.png` for every year from the start
-year up to the current one. Existing files with the same name are overwritten.
-The current year's chart shows the weeks traded so far.
+Each run creates its own folder inside `screenshots/`, named after the symbol,
+the start year and the time of the request:
+
+```
+screenshots/
+└── AAPL_from_2018_2026-11-06_16-57-40/
+    ├── AAPL_2018.png
+    ├── ...
+    └── AAPL_2026.png
+```
+
+It holds one chart per year from the start year up to the current one, so
+earlier runs are never overwritten. The current year's chart shows the weeks
+traded so far.
 
 If the symbol only started trading after the start year, earlier years are
 skipped and the script says so.

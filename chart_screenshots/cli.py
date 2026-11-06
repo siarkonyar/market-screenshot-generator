@@ -1,6 +1,6 @@
 """Interactive command line: ask for a symbol and a start year, then save the charts."""
 import re
-from datetime import date
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, TypeVar
 
@@ -11,6 +11,7 @@ from chart_screenshots.data import DataFetchError, fetch_daily, split_by_year, t
 
 SYMBOL_PATTERN = re.compile(r"^[A-Z0-9.^=\-]{1,20}$")
 MIN_START_YEAR = 1900
+RUN_DIR_TIMESTAMP_FORMAT = "%Y-%m-%d_%H-%M-%S"
 EXIT_OK = 0
 EXIT_FAILURE = 1
 EXIT_CANCELLED = 130
@@ -39,6 +40,12 @@ def parse_start_year(raw: str, current_year: int) -> int:
     if not MIN_START_YEAR <= year <= current_year:
         raise ValueError(f"Start year must be between {MIN_START_YEAR} and {current_year}.")
     return year
+
+
+def build_run_dir(base_dir: Path, symbol: str, start_year: int, requested_at: datetime) -> Path:
+    """Return the folder for one request, e.g. `AAPL_from_2019_2026-11-06_16-53-07`."""
+    timestamp = requested_at.strftime(RUN_DIR_TIMESTAMP_FORMAT)
+    return Path(base_dir) / f"{symbol}_from_{start_year}_{timestamp}"
 
 
 def prompt_until_valid(
@@ -92,9 +99,13 @@ def run(
     return EXIT_OK
 
 
-def main(out_dir: Path, read: Callable[[str], str] = input) -> int:
-    """Ask for the symbol and start year, then save the charts into `out_dir`."""
-    current_year = date.today().year
+def main(
+    out_dir: Path,
+    read: Callable[[str], str] = input,
+    now: Callable[[], datetime] = datetime.now,
+) -> int:
+    """Ask for the symbol and start year, then save the charts into a new folder in `out_dir`."""
+    current_year = now().year
     try:
         symbol = prompt_until_valid("Enter ticker symbol (e.g. AAPL): ", parse_symbol, read=read)
         start_year = prompt_until_valid(
@@ -102,7 +113,8 @@ def main(out_dir: Path, read: Callable[[str], str] = input) -> int:
             lambda raw: parse_start_year(raw, current_year),
             read=read,
         )
-        return run(symbol, start_year, out_dir)
+        run_dir = build_run_dir(out_dir, symbol, start_year, requested_at=now())
+        return run(symbol, start_year, run_dir)
     except (KeyboardInterrupt, EOFError):
         print("\nCancelled.")
         return EXIT_CANCELLED
