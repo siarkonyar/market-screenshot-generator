@@ -6,24 +6,27 @@ from typing import Callable, TypeVar
 
 import pandas as pd
 
+from chart_screenshots import __version__
+from chart_screenshots.bulk import run_all_markets
 from chart_screenshots.charts import render_year_chart
-from chart_screenshots.data import DataFetchError, fetch_daily, split_by_year, to_weekly
+from chart_screenshots.data import DataFetchError, fetch_daily, yearly_candles
+from chart_screenshots.exit_codes import EXIT_CANCELLED, EXIT_FAILURE, EXIT_OK
 
 SYMBOL_PATTERN = re.compile(r"^[A-Z0-9.^=\-]{1,20}$")
 MIN_START_YEAR = 1900
 RUN_DIR_TIMESTAMP_FORMAT = "%Y-%m-%d_%H-%M-%S"
-EXIT_OK = 0
-EXIT_FAILURE = 1
-EXIT_CANCELLED = 130
+ALL_MARKETS_LABEL = "ALL"
 
 T = TypeVar("T")
 Fetch = Callable[[str, int], pd.DataFrame]
 Render = Callable[[pd.DataFrame, str, int, Path], Path]
 
 
-def parse_symbol(raw: str) -> str:
-    """Normalize a ticker symbol to upper case and reject anything that is not a ticker."""
+def parse_symbol(raw: str) -> str | None:
+    """Normalize a ticker to upper case. Empty input means every market (returns None)."""
     symbol = raw.strip().upper()
+    if not symbol:
+        return None
     if not SYMBOL_PATTERN.fullmatch(symbol):
         raise ValueError(
             "Symbol must be 1-20 characters using letters, digits, '.', '-', '^' or '='."
@@ -78,7 +81,7 @@ def run(
         write(f"Error: {error}")
         return EXIT_FAILURE
 
-    years = split_by_year(to_weekly(daily), start_year)
+    years = yearly_candles(daily, start_year)
     if not years:
         write(f"Error: no weekly candles found for {symbol} since {start_year}.")
         return EXIT_FAILURE
@@ -104,17 +107,29 @@ def main(
     read: Callable[[str], str] = input,
     now: Callable[[], datetime] = datetime.now,
 ) -> int:
-    """Ask for the symbol and start year, then save the charts into a new folder in `out_dir`."""
+    """Ask for the symbol and start year, then save the charts into a new folder in `out_dir`.
+
+    An empty symbol saves charts for every symbol of every market in ./symbols.
+    """
+    print(f"Market Screenshot Generator v{__version__}")
     current_year = now().year
     try:
-        symbol = prompt_until_valid("Enter ticker symbol (e.g. AAPL): ", parse_symbol, read=read)
+        symbol = prompt_until_valid(
+            "Enter ticker symbol (e.g. AAPL, or leave empty for all markets): ",
+            parse_symbol,
+            read=read,
+        )
         start_year = prompt_until_valid(
             "Enter start year (e.g. 2018): ",
             lambda raw: parse_start_year(raw, current_year),
             read=read,
         )
-        run_dir = build_run_dir(out_dir, symbol, start_year, requested_at=now())
-        return run(symbol, start_year, run_dir)
+        requested_at = now()
+        if symbol is None:
+            return run_all_markets(
+                start_year, build_run_dir(out_dir, ALL_MARKETS_LABEL, start_year, requested_at)
+            )
+        return run(symbol, start_year, build_run_dir(out_dir, symbol, start_year, requested_at))
     except (KeyboardInterrupt, EOFError):
         print("\nCancelled.")
         return EXIT_CANCELLED

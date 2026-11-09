@@ -20,10 +20,15 @@ def test_parse_symbol_accepts_and_normalizes_valid_tickers(raw, expected):
     assert cli.parse_symbol(raw) == expected
 
 
-@pytest.mark.parametrize("raw", ["", "   ", "AA PL", "AAPL;rm", "A" * 21])
+@pytest.mark.parametrize("raw", ["AA PL", "AAPL;rm", "A" * 21])
 def test_parse_symbol_rejects_invalid_tickers(raw):
     with pytest.raises(ValueError):
         cli.parse_symbol(raw)
+
+
+@pytest.mark.parametrize("raw", ["", "   "])
+def test_parse_symbol_returns_none_for_empty_input_meaning_all_markets(raw):
+    assert cli.parse_symbol(raw) is None
 
 
 def test_parse_start_year_accepts_year_in_range():
@@ -39,7 +44,7 @@ def test_parse_start_year_rejects_invalid_years(raw):
 
 def test_prompt_until_valid_retries_after_bad_input():
     # Arrange
-    answers = iter(["", "aapl"])
+    answers = iter(["AA PL", "aapl"])
     messages = []
 
     # Act
@@ -133,6 +138,25 @@ def test_main_saves_charts_into_a_folder_for_this_request(monkeypatch, tmp_path)
     # Assert
     assert exit_code == 0
     assert calls == [("AAPL", 2020, tmp_path / "AAPL_from_2020_2026-11-06_09-05-00")]
+
+
+def test_main_runs_all_markets_when_symbol_is_empty(monkeypatch, tmp_path):
+    # Arrange
+    answers = iter(["", "2012"])
+    calls = []
+    monkeypatch.setattr(cli, "run_all_markets", lambda *args: calls.append(args) or 0)
+    requested_at = datetime(2026, 11, 6, 18, 0, 0)
+
+    # Act
+    exit_code = cli.main(
+        tmp_path,
+        read=lambda prompt: next(answers),
+        now=lambda: requested_at,
+    )
+
+    # Assert
+    assert exit_code == 0
+    assert calls == [(2012, tmp_path / "ALL_from_2012_2026-11-06_18-00-00")]
 
 
 def test_main_exits_cleanly_on_ctrl_c(tmp_path):

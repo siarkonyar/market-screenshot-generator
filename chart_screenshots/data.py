@@ -75,3 +75,8 @@ def split_by_year(weekly: pd.DataFrame, start_year: int) -> dict[int, pd.DataFra
         for year in sorted(set(years))
         if year >= start_year
     }
+
+
+def yearly_candles(daily: pd.DataFrame, start_year: int) -> dict[int, pd.DataFrame]:
+    """Weekly candles per year from `start_year` on; years before the first data are absent."""
+    return split_by_year(to_weekly(daily), start_year)
